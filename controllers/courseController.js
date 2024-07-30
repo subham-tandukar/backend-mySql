@@ -1,4 +1,3 @@
-const course = require("../models/courseSchema");
 const fs = require("fs");
 const cloudinary = require("../cloudinary");
 const connectDB = require("../db/conn");
@@ -12,10 +11,12 @@ const ensureCourseTableExists = async () => {
       `CREATE TABLE IF NOT EXISTS course (
         _id INT AUTO_INCREMENT PRIMARY KEY,
         Title VARCHAR(255) NOT NULL,
+        Description TEXT NOT NULL,
         Price DECIMAL(10, 2) NOT NULL,
         NoOfSeat INT NOT NULL,
         Image_public_id VARCHAR(255) NOT NULL,
         Image_url VARCHAR(255) NOT NULL,
+        ViewCount INT DEFAULT 0,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )`,
@@ -29,14 +30,15 @@ const ensureCourseTableExists = async () => {
 
 // ---- add course ----
 exports.course = async (req, res) => {
-  const { FLAG, CourseID, Title, Price, NoOfSeat, Image } = req.body;
+  const { FLAG, CourseID, Title, Description, Price, NoOfSeat, Image } =
+    req.body;
 
   try {
     // Ensure the course table exists
     await ensureCourseTableExists();
 
     if (FLAG === "I") {
-      if (!Title || !Price || !Image || !NoOfSeat) {
+      if (!Title || !Description || !Price || !Image || !NoOfSeat) {
         return res.status(422).json({
           Message: "Please fill the required fields",
         });
@@ -52,12 +54,19 @@ exports.course = async (req, res) => {
       });
 
       const query = `
-        INSERT INTO course (Title, Price, NoOfSeat, Image_public_id, Image_url)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO course (Title,Description, Price, NoOfSeat, Image_public_id, Image_url)
+        VALUES (?, ?,?, ?, ?, ?)
       `;
       db.query(
         query,
-        [Title, Price, NoOfSeat, courseImg.public_id, courseImg.secure_url],
+        [
+          Title,
+          Description,
+          Price,
+          NoOfSeat,
+          courseImg.public_id,
+          courseImg.secure_url,
+        ],
         (err, result) => {
           if (err) {
             return res.status(500).json({ error: err.message });
@@ -73,7 +82,7 @@ exports.course = async (req, res) => {
         }
       );
     } else if (FLAG === "U") {
-      if (!Title || !Price || !Image || !NoOfSeat) {
+      if (!Title || !Description || !Price || !Image || !NoOfSeat) {
         return res.status(422).json({
           Message: "Please fill the required fields",
         });
@@ -108,13 +117,14 @@ exports.course = async (req, res) => {
             });
 
             const updateQuery = `
-            UPDATE course SET Title = ?, Price = ?, NoOfSeat = ?, Image_public_id = ?, Image_url = ?
+            UPDATE course SET Title = ?, Description=?, Price = ?, NoOfSeat = ?, Image_public_id = ?, Image_url = ?
             WHERE _id = ?
           `;
             db.query(
               updateQuery,
               [
                 Title,
+                Description,
                 Price,
                 NoOfSeat,
                 courseImg.public_id,
@@ -132,12 +142,12 @@ exports.course = async (req, res) => {
         );
       } else {
         const updateQuery = `
-          UPDATE course SET Title = ?, Price = ?, NoOfSeat = ?
+          UPDATE course SET Title = ?, Description=?, Price = ?, NoOfSeat = ?
           WHERE _id = ?
         `;
         db.query(
           updateQuery,
-          [Title, Price, NoOfSeat, CourseID],
+          [Title, Description, Price, NoOfSeat, CourseID],
           (err, result) => {
             if (err) {
               return res.status(500).json({ error: err.message });
@@ -157,6 +167,19 @@ exports.course = async (req, res) => {
         }
         res.status(200).json({ StatusCode: 200, Message: "success" });
       });
+    } else if (FLAG === "COUNT") {
+      const updateQuery = `
+      UPDATE course SET ViewCount = ViewCount + 1 WHERE _id = ?
+      `;
+      db.query(updateQuery, [CourseID], (err, result) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.status(200).json({
+          StatusCode: 200,
+          Message: "View count incremented",
+        });
+      });
     } else if (FLAG === "SI") {
       const selectQuery = `
         SELECT * FROM course WHERE _id = ?
@@ -170,8 +193,10 @@ exports.course = async (req, res) => {
         const formattedResults = results.map((course) => ({
           _id: course._id,
           Title: course.Title,
+          Description: course.Description,
           Price: course.Price,
           NoOfSeat: course.NoOfSeat,
+          ViewCount: course.ViewCount,
           Image: {
             public_id: course.Image_public_id,
             url: course.Image_url,
@@ -221,7 +246,7 @@ exports.course = async (req, res) => {
 // --- get course ---
 exports.getCourse = async (req, res) => {
   try {
-    const sql = "SELECT * FROM course ORDER BY createdAt DESC";
+    const sql = "SELECT * FROM course ORDER BY ViewCount DESC";
 
     db.query(sql, (err, results) => {
       if (err) return res.status(400).json({ StatusCode: 400, Message: err });
@@ -229,8 +254,10 @@ exports.getCourse = async (req, res) => {
       const formattedResults = results.map((course) => ({
         _id: course._id,
         Title: course.Title,
+        Description: course.Description,
         Price: course.Price,
         NoOfSeat: course.NoOfSeat,
+        ViewCount: course.ViewCount,
         Image: {
           public_id: course.Image_public_id,
           url: course.Image_url,

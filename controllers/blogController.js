@@ -1,4 +1,3 @@
-const blog = require("../models/blogSchema");
 const fs = require("fs");
 const cloudinary = require("../cloudinary");
 const connectDB = require("../db/conn");
