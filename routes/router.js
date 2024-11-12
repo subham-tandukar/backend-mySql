@@ -7,6 +7,7 @@ const categoryControllers = require("../controllers/categoryController");
 const blogControllers = require("../controllers/blogController");
 const courseControllers = require("../controllers/courseController");
 const bookingControllers = require("../controllers/bookingController");
+const faqControllers = require("../controllers/faqController");
 
 // ==============================
 router.post("/api/user", userControllers.user);
@@ -18,6 +19,8 @@ router.post("/api/course", courseControllers.course);
 router.get("/api/getCourse", courseControllers.getCourse);
 router.post("/api/booking", bookingControllers.booking);
 router.get("/api/getBooking", bookingControllers.getBooking);
+router.post("/api/faq", faqControllers.faq);
+router.get("/api/getFaq", faqControllers.getFaq);
 
 // -------------------------------
 

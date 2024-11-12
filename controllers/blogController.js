@@ -128,6 +128,7 @@ exports.blog = async (req, res) => {
             public_id: blog.Image_public_id,
             url: blog.Image_url,
           },
+          createdAt: blog.createdAt
         }));
 
         if (results.length > 0) {
@@ -230,6 +231,7 @@ exports.getBlog = async (req, res) => {
           public_id: blog.Image_public_id,
           url: blog.Image_url,
         },
+        createdAt: blog.createdAt
       }));
 
       res.status(200).json({
